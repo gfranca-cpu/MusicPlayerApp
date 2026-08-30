@@ -10,6 +10,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -97,42 +99,46 @@ fun ExpandableArtistItem(
                     .padding(start = 24.dp, end = 12.dp, top = 2.dp, bottom = 6.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(ExpandedPanel)
-                    .padding(12.dp)
+                    .padding(8.dp)
+                    .height(200.dp)
             ) {
-                artist.albums.forEach { album ->
-                    // Nome do álbum
-                    Text(
-                        text = album.name,
-                        color = TextWhite.copy(alpha = 0.85f),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    artist.albums.forEach { album ->
+                        item {
+                            Text(
+                                text = album.name,
+                                color = TextWhite.copy(alpha = 0.85f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
 
-                    // Lista de músicas
-                    album.songs.forEach { song ->
-                        val isPlaying = song.id == currentSongId
+                        items(album.songs) { song ->
+                            val isPlaying = song.id == currentSongId
 
-                        Text(
-                            text = song.title,
-                            color = if (isPlaying) TextPlaying else TextWhite,
-                            fontSize = 14.sp,
-                            fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    // Toca sem mudar de tela, só muda a cor
-                                    val allSongsOfArtist = artist.albums.flatMap { it.songs }
-                                    onSongClick(song, allSongsOfArtist)
-                                }
-                                .padding(vertical = 6.dp, horizontal = 4.dp)
-                        )
-                    }
+                            Text(
+                                text = song.title,
+                                color = if (isPlaying) TextPlaying else TextWhite,
+                                fontSize = 14.sp,
+                                fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val allSongsOfArtist = artist.albums.flatMap { it.songs }
+                                        onSongClick(song, allSongsOfArtist)
+                                    }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp)
+                            )
+                        }
 
-                    if (album != artist.albums.last()) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                        if (album != artist.albums.last()) {
+                            item {
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
                     }
                 }
             }
