@@ -1,20 +1,14 @@
 package com.musicplayer.app.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -22,12 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.musicplayer.app.data.Artist
 import com.musicplayer.app.data.Song
 import com.musicplayer.app.ui.theme.ArtistCard
@@ -42,24 +37,78 @@ fun ExpandableArtistItem(
     onSongClick: (Song, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    val maxDragOffset = 180f
 
-    val rotation by animateFloatAsState(
-        targetValue = if (expanded) 90f else 0f,
-        animationSpec = tween(durationMillis = 280),
-        label = "arrowRotation"
-    )
+    Box(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 12.dp, top = 2.dp, bottom = 6.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(ExpandedPanel)
+                .padding(8.dp)
+                .height(200.dp)
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                artist.albums.forEach { album ->
+                    item {
+                        Text(
+                            text = album.name,
+                            color = TextWhite.copy(alpha = 0.85f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+                    items(album.songs) { song ->
+                        val isPlaying = song.id == currentSongId
 
-        // === FAIXA CINZA DO ARTISTA (a parte principal do seu desenho) ===
+                        Text(
+                            text = song.title,
+                            color = if (isPlaying) TextPlaying else TextWhite,
+                            fontSize = 14.sp,
+                            fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val allSongsOfArtist = artist.albums.flatMap { it.songs }
+                                    onSongClick(song, allSongsOfArtist)
+                                }
+                                .padding(vertical = 4.dp, horizontal = 4.dp)
+                        )
+                    }
+
+                    if (album != artist.albums.last()) {
+                        item {
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                    }
+                }
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
+                .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
                 .clip(RoundedCornerShape(8.dp))
                 .background(ArtistCard)
-                .clickable { expanded = !expanded }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { },
+                        onDragEnd = { },
+                        onDragCancel = { },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragOffsetX = (dragOffsetX + dragAmount).coerceIn(-maxDragOffset, maxDragOffset)
+                        }
+                    )
+                }
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -77,71 +126,8 @@ fun ExpandableArtistItem(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
                 tint = TextWhite,
-                modifier = Modifier
-                    .size(24.dp)
-                    .rotate(rotation)
+                modifier = Modifier.size(24.dp)
             )
-        }
-
-        // === PAINEL EXPANDIDO (álbum + músicas) — animação bem lisa ===
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(
-                animationSpec = tween(durationMillis = 300)
-            ) + fadeIn(animationSpec = tween(300)),
-            exit = shrinkVertically(
-                animationSpec = tween(durationMillis = 250)
-            ) + fadeOut(animationSpec = tween(200))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 12.dp, top = 2.dp, bottom = 6.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(ExpandedPanel)
-                    .padding(8.dp)
-                    .height(200.dp)
-            ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    artist.albums.forEach { album ->
-                        item {
-                            Text(
-                                text = album.name,
-                                color = TextWhite.copy(alpha = 0.85f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                        }
-
-                        items(album.songs) { song ->
-                            val isPlaying = song.id == currentSongId
-
-                            Text(
-                                text = song.title,
-                                color = if (isPlaying) TextPlaying else TextWhite,
-                                fontSize = 14.sp,
-                                fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val allSongsOfArtist = artist.albums.flatMap { it.songs }
-                                        onSongClick(song, allSongsOfArtist)
-                                    }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp)
-                            )
-                        }
-
-                        if (album != artist.albums.last()) {
-                            item {
-                                Spacer(modifier = Modifier.height(6.dp))
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
