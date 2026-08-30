@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -90,8 +92,6 @@ fun MusicPlayerApp(
     repository: MusicRepository,
     playerManager: PlayerManager
 ) {
-    var selectedTab by remember { mutableStateOf(BottomNavItem.ARTISTS) }
-
     var artists by remember { mutableStateOf<List<Artist>>(emptyList()) }
     var albums by remember { mutableStateOf<List<Album>>(emptyList()) }
     var allSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
@@ -99,7 +99,8 @@ fun MusicPlayerApp(
 
     val currentSong by playerManager.currentSong.collectAsState()
     val isPlaying by playerManager.isPlaying.collectAsState()
-
+    val pagerState = rememberPagerState(initialPage = BottomNavItem.ARTISTS.ordinal) { 3 }
+    val selectedTab = BottomNavItem.entries[pagerState.currentPage]
     val scope = rememberCoroutineScope()
 
     // Carrega as músicas ao iniciar
@@ -130,7 +131,11 @@ fun MusicPlayerApp(
 
                 BottomNavBar(
                     selected = selectedTab,
-                    onItemSelected = { selectedTab = it }
+                    onItemSelected = { item ->
+                        scope.launch {
+                            pagerState.animateScrollToPage(item.ordinal)
+                        }
+                    }
                 )
             }
         }
@@ -141,36 +146,44 @@ fun MusicPlayerApp(
                 .padding(padding)
                 .background(DarkBackground)
         ) {
-            when (selectedTab) {
-                BottomNavItem.ARTISTS -> {
-                    ArtistsScreen(
-                        artists = artists,
-                        isLoading = isLoading,
-                        currentSongId = currentSong?.id,
-                        onSongClick = { song, list ->
-                            playerManager.playSong(song, list)
-                        }
-                    )
-                }
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                pageSpacing = 0.dp,
+                userScrollEnabled = true,
+                beyondViewportPageCount = 1
+            ) { page ->
+                when (BottomNavItem.entries[page]) {
+                    BottomNavItem.ARTISTS -> {
+                        ArtistsScreen(
+                            artists = artists,
+                            isLoading = isLoading,
+                            currentSongId = currentSong?.id,
+                            onSongClick = { song, list ->
+                                playerManager.playSong(song, list)
+                            }
+                        )
+                    }
 
-                BottomNavItem.ALBUMS -> {
-                    AlbumsScreen(
-                        albums = albums,
-                        currentSongId = currentSong?.id,
-                        onSongClick = { song, list ->
-                            playerManager.playSong(song, list)
-                        }
-                    )
-                }
+                    BottomNavItem.ALBUMS -> {
+                        AlbumsScreen(
+                            albums = albums,
+                            currentSongId = currentSong?.id,
+                            onSongClick = { song, list ->
+                                playerManager.playSong(song, list)
+                            }
+                        )
+                    }
 
-                BottomNavItem.SONGS -> {
-                    SongsScreen(
-                        songs = allSongs,
-                        currentSongId = currentSong?.id,
-                        onSongClick = { song, list ->
-                            playerManager.playSong(song, list)
-                        }
-                    )
+                    BottomNavItem.SONGS -> {
+                        SongsScreen(
+                            songs = allSongs,
+                            currentSongId = currentSong?.id,
+                            onSongClick = { song, list ->
+                                playerManager.playSong(song, list)
+                            }
+                        )
+                    }
                 }
             }
         }

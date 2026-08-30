@@ -36,7 +36,7 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.08.00"))
     implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.foundation:foundation:1.7.0")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.runtime:runtime")
