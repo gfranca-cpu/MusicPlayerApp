@@ -44,7 +44,12 @@ fun AlbumsScreen(
         )
 
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(
+                start = 12.dp,
+                top = 8.dp,
+                end = 12.dp,
+                bottom = 120.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(albums, key = { it.name }) { album ->
