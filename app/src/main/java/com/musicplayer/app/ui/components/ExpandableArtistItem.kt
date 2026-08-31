@@ -35,11 +35,17 @@ import com.musicplayer.app.ui.theme.TextWhite
 fun ExpandableArtistItem(
     artist: Artist,
     currentSongId: Long?,
+    isExpanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    var dragOffsetX by remember { mutableFloatStateOf(if (isExpanded) 180f else 0f) }
     val maxDragOffset = 180f
+
+    LaunchedEffect(isExpanded) {
+        dragOffsetX = if (isExpanded) maxDragOffset else 0f
+    }
 
     Box(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -102,11 +108,22 @@ fun ExpandableArtistItem(
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = { },
-                        onDragEnd = { },
-                        onDragCancel = { },
+                        onDragEnd = {
+                            if (dragOffsetX > maxDragOffset / 2f) {
+                                onExpandedChange(true)
+                                dragOffsetX = maxDragOffset
+                            } else {
+                                onExpandedChange(false)
+                                dragOffsetX = 0f
+                            }
+                        },
+                        onDragCancel = {
+                            onExpandedChange(false)
+                            dragOffsetX = 0f
+                        },
                         onHorizontalDrag = { change: PointerInputChange, dragAmount: Float ->
                             change.consume()
-                            dragOffsetX = (dragOffsetX + dragAmount).coerceIn(-maxDragOffset, maxDragOffset)
+                            dragOffsetX = (dragOffsetX + dragAmount).coerceIn(0f, maxDragOffset)
                         }
                     )
                 }

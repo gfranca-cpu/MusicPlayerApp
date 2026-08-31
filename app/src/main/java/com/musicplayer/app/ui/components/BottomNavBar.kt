@@ -2,8 +2,9 @@ package com.musicplayer.app.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -18,7 +19,8 @@ enum class BottomNavItem(
 ) {
     ARTISTS("Artistas", Icons.Default.Person),
     ALBUMS("Álbuns", Icons.Default.Album),
-    SONGS("Músicas", Icons.Default.MusicNote)
+    PLAYLISTS("Playlists", Icons.Default.PlaylistPlay),
+    GENRES("Gêneros", Icons.Default.LibraryMusic)
 }
 
 @Composable

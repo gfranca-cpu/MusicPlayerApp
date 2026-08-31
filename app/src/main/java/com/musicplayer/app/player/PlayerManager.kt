@@ -19,6 +19,9 @@ class PlayerManager(context: Context) {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
+    var isShuffleEnabled: Boolean = false
+    var isRepeatEnabled: Boolean = false
+
     private var playlist: List<Song> = emptyList()
     private var currentIndex: Int = -1
 
@@ -57,9 +60,22 @@ class PlayerManager(context: Context) {
         }
     }
 
+    fun toggleShuffle() {
+        isShuffleEnabled = !isShuffleEnabled
+    }
+
+    fun toggleRepeat() {
+        isRepeatEnabled = !isRepeatEnabled
+    }
+
     fun playNext() {
         if (playlist.isEmpty()) return
-        currentIndex = (currentIndex + 1) % playlist.size
+        val nextIndex = when {
+            isShuffleEnabled -> playlist.indices.random()
+            isRepeatEnabled && currentIndex == playlist.lastIndex -> 0
+            else -> (currentIndex + 1) % playlist.size
+        }
+        currentIndex = nextIndex
         val next = playlist[currentIndex]
         playSong(next, playlist)
     }

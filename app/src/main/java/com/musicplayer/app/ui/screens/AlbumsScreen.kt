@@ -8,12 +8,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.musicplayer.app.data.Album
 import com.musicplayer.app.data.Song
 import com.musicplayer.app.ui.theme.ArtistCard
@@ -41,46 +44,65 @@ fun AlbumsScreen(
         )
 
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(albums, key = { it.name }) { album ->
-                Column(
+                val firstSong = album.songs.firstOrNull()
+                val albumArtist = firstSong?.artist ?: "Artista Desconhecido"
+                val albumArtUri = firstSong?.albumArtUri
+
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(ArtistCard)
-                        .padding(14.dp)
+                        .clickable { album.songs.firstOrNull()?.let { song -> onSongClick(song, album.songs) } }
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = album.name,
-                        color = TextWhite,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    AsyncImage(
+                        model = albumArtUri,
+                        contentDescription = "Capa do álbum ${album.name}",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                    album.songs.forEach { song ->
-                        val isPlaying = song.id == currentSongId
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text(
-                            text = "  ${song.title}",
-                            color = if (isPlaying) TextPlaying else TextWhite.copy(alpha = 0.9f),
-                            fontSize = 14.sp,
-                            fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
+                            text = album.name,
+                            color = TextWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onSongClick(song, album.songs) }
-                                .padding(vertical = 4.dp)
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Text(
+                            text = albumArtist,
+                            color = TextWhite.copy(alpha = 0.75f),
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    if (album.songs.any { it.id == currentSongId }) {
+                        Text(
+                            text = "▶",
+                            color = TextPlaying,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(120.dp)) }
         }
     }
 }

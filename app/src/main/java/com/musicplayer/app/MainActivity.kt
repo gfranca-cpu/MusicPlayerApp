@@ -26,7 +26,8 @@ import com.musicplayer.app.ui.components.BottomNavItem
 import com.musicplayer.app.ui.components.MiniPlayer
 import com.musicplayer.app.ui.screens.AlbumsScreen
 import com.musicplayer.app.ui.screens.ArtistsScreen
-import com.musicplayer.app.ui.screens.SongsScreen
+import com.musicplayer.app.ui.screens.GenresScreen
+import com.musicplayer.app.ui.screens.PlaylistsScreen
 import com.musicplayer.app.ui.theme.DarkBackground
 import com.musicplayer.app.ui.theme.MusicPlayerTheme
 import kotlinx.coroutines.launch
@@ -96,11 +97,12 @@ fun MusicPlayerApp(
     var artists by remember { mutableStateOf<List<Artist>>(emptyList()) }
     var albums by remember { mutableStateOf<List<Album>>(emptyList()) }
     var allSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
+    var genres by remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
     val currentSong by playerManager.currentSong.collectAsState()
     val isPlaying by playerManager.isPlaying.collectAsState()
-    val pagerState = rememberPagerState(initialPage = BottomNavItem.ARTISTS.ordinal) { 3 }
+    val pagerState = rememberPagerState(initialPage = BottomNavItem.ARTISTS.ordinal) { 4 }
     val selectedTab = BottomNavItem.entries[pagerState.currentPage]
     val scope = rememberCoroutineScope()
 
@@ -111,6 +113,7 @@ fun MusicPlayerApp(
             artists = repository.loadArtists()
             albums = repository.loadAlbums()
             allSongs = repository.loadAllSongs()
+            genres = repository.loadGenres()
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
@@ -126,8 +129,12 @@ fun MusicPlayerApp(
                 MiniPlayer(
                     currentSong = currentSong,
                     isPlaying = isPlaying,
+                    isShuffleEnabled = playerManager.isShuffleEnabled,
+                    isRepeatEnabled = playerManager.isRepeatEnabled,
                     onPlayPause = { playerManager.togglePlayPause() },
-                    onNext = { playerManager.playNext() }
+                    onNext = { playerManager.playNext() },
+                    onShuffle = { playerManager.toggleShuffle() },
+                    onRepeat = { playerManager.toggleRepeat() }
                 )
 
                 BottomNavBar(
@@ -176,9 +183,20 @@ fun MusicPlayerApp(
                         )
                     }
 
-                    BottomNavItem.SONGS -> {
-                        SongsScreen(
+                    BottomNavItem.PLAYLISTS -> {
+                        PlaylistsScreen(
                             songs = allSongs,
+                            currentSongId = currentSong?.id,
+                            onSongClick = { song, list ->
+                                playerManager.playSong(song, list)
+                            }
+                        )
+                    }
+
+                    BottomNavItem.GENRES -> {
+                        GenresScreen(
+                            songs = allSongs,
+                            genres = genres,
                             currentSongId = currentSong?.id,
                             onSongClick = { song, list ->
                                 playerManager.playSong(song, list)

@@ -43,7 +43,8 @@ class MusicRepository(private val context: Context) {
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.ALBUM_ID
+            MediaStore.Audio.Media.ALBUM_ID,
+            MediaStore.Audio.Media.GENRE
         )
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -62,6 +63,7 @@ class MusicRepository(private val context: Context) {
             val albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val albumIdCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+            val genreCol = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
@@ -70,6 +72,11 @@ class MusicRepository(private val context: Context) {
                 val album = cursor.getString(albumCol) ?: "Álbum Desconhecido"
                 val duration = cursor.getLong(durationCol)
                 val albumId = cursor.getLong(albumIdCol)
+                val genre = if (genreCol >= 0 && !cursor.isNull(genreCol)) {
+                    cursor.getString(genreCol)
+                } else {
+                    null
+                }
 
                 val contentUri = ContentUris.withAppendedId(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id
@@ -88,7 +95,8 @@ class MusicRepository(private val context: Context) {
                         album = album,
                         duration = duration,
                         uri = contentUri,
-                        albumArtUri = albumArtUri
+                        albumArtUri = albumArtUri,
+                        genre = genre
                     )
                 )
             }
@@ -105,5 +113,13 @@ class MusicRepository(private val context: Context) {
                 Album(name = albumName, songs = albumSongs.sortedBy { it.title })
             }
             .sortedBy { it.name }
+    }
+
+    suspend fun loadGenres(): List<String> = withContext(Dispatchers.IO) {
+        loadAllSongs()
+            .mapNotNull { it.genre }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
     }
 }
