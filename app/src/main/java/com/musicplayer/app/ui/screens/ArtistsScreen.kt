@@ -48,7 +48,8 @@ fun ArtistsScreen(
     val allSongs = remember(artists) { buildFlatArtistSongs(artists) }
     val dragOffsets = remember(artists) { mutableStateMapOf<String, Float>() }
     var activeArtist by remember(artists) { mutableStateOf<String?>(null) }
-    val listState = rememberLazyListState()
+    val backgroundListState = rememberLazyListState()
+    val artistListState = rememberLazyListState()
 
     Column(
         modifier = Modifier
@@ -89,7 +90,7 @@ fun ArtistsScreen(
             else -> {
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
-                        state = listState,
+                        state = backgroundListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 140.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -141,7 +142,7 @@ fun ArtistsScreen(
                     }
 
                     LazyColumn(
-                        state = listState,
+                        state = artistListState,
                         userScrollEnabled = false,
                         modifier = Modifier
                             .fillMaxSize()
@@ -161,7 +162,7 @@ fun ArtistsScreen(
                                 allSongs = allSongs,
                                 currentSongId = currentSongId,
                                 onSongClick = onSongClick,
-                                listState = listState,
+                                listState = backgroundListState,
                                 dragOffsetX = dragOffset,
                                 onDragStart = {
                                     if (activeArtist != artist.name) {
