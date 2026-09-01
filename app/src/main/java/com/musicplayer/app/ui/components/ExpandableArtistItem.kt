@@ -1,21 +1,25 @@
 package com.musicplayer.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -23,75 +27,82 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import com.musicplayer.app.data.Artist
 import com.musicplayer.app.data.Song
 import com.musicplayer.app.ui.theme.ArtistCard
-import com.musicplayer.app.ui.theme.ExpandedPanel
-import com.musicplayer.app.ui.theme.TextPlaying
+import com.musicplayer.app.ui.theme.DarkBackground
 import com.musicplayer.app.ui.theme.TextWhite
+import kotlin.math.roundToInt
 
 @Composable
 fun ExpandableArtistItem(
     artist: Artist,
+    allSongs: List<Song>,
     currentSongId: Long?,
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var dragOffsetX by remember { mutableFloatStateOf(if (isExpanded) 180f else 0f) }
-    val maxDragOffset = 180f
+    var expanded by remember { mutableStateOf(false) }
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    val maxDragOffset = 220f
+    val visibleSongs = allSongs.sortedBy { it.title }
+    val artistSongs = visibleSongs.filter { it.artist == artist.name }
+    val drawerVisible = expanded || dragOffsetX > 0f
 
-    LaunchedEffect(isExpanded) {
-        dragOffsetX = if (isExpanded) maxDragOffset else 0f
-    }
-
-    Box(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 12.dp, top = 2.dp, bottom = 6.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(ExpandedPanel)
-                .padding(8.dp)
-                .height(200.dp)
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                artist.albums.forEach { album ->
-                    item {
-                        Text(
-                            text = album.name,
-                            color = TextWhite.copy(alpha = 0.85f),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                    }
-
-                    items(album.songs) { song ->
-                        val isPlaying = song.id == currentSongId
-
-                        Text(
-                            text = song.title,
-                            color = if (isPlaying) TextPlaying else TextWhite,
-                            fontSize = 14.sp,
-                            fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        if (drawerVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxWidth(0.68f)
+                    .height(160.dp)
+                    .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(DarkBackground.copy(alpha = 0.96f))
+                    .border(1.dp, TextWhite.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(visibleSongs, key = { it.id }) { song ->
+                        val isFromArtist = song.artist == artist.name
+                        val enabled = isFromArtist
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    val allSongsOfArtist = artist.albums.flatMap { it.songs }
-                                    onSongClick(song, allSongsOfArtist)
+                                .alpha(if (isFromArtist) 1f else 0.3f)
+                                .clickable(enabled = enabled) {
+                                    if (enabled) {
+                                        onSongClick(song, artistSongs)
+                                    }
                                 }
-                                .padding(vertical = 4.dp, horizontal = 4.dp)
-                        )
-                    }
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = null,
+                                tint = if (isFromArtist) Color(0xFFB7F7C1) else TextWhite.copy(alpha = 0.6f),
+                                modifier = Modifier.size(14.dp)
+                            )
 
-                    if (album != artist.albums.last()) {
-                        item {
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(
+                                text = song.title,
+                                color = if (isFromArtist) TextWhite else TextWhite.copy(alpha = 0.5f),
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
@@ -101,24 +112,18 @@ fun ExpandableArtistItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(ArtistCard)
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = { },
                         onDragEnd = {
-                            if (dragOffsetX > maxDragOffset / 2f) {
-                                onExpandedChange(true)
-                                dragOffsetX = maxDragOffset
-                            } else {
-                                onExpandedChange(false)
-                                dragOffsetX = 0f
-                            }
+                            expanded = dragOffsetX > maxDragOffset * 0.5f
+                            dragOffsetX = if (expanded) maxDragOffset else 0f
                         },
                         onDragCancel = {
-                            onExpandedChange(false)
+                            expanded = false
                             dragOffsetX = 0f
                         },
                         onHorizontalDrag = { change: PointerInputChange, dragAmount: Float ->
@@ -127,11 +132,29 @@ fun ExpandableArtistItem(
                         }
                     )
                 }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(ArtistCard.copy(alpha = 0.75f))
+                    .border(1.dp, TextWhite.copy(alpha = 0.35f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = artist.name.take(2).uppercase(),
+                    color = TextWhite,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
             Text(
-                text = artist.name.uppercase(),
+                text = artist.name,
                 color = TextWhite,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -141,10 +164,10 @@ fun ExpandableArtistItem(
             )
 
             Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
+                imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = TextWhite,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
