@@ -102,7 +102,7 @@ class MusicRepository(private val context: Context) {
             }
         }
 
-        songs
+        songs.distinctBy { it.id }
     }
 
     suspend fun loadAlbums(): List<Album> = withContext(Dispatchers.IO) {
