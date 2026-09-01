@@ -161,6 +161,7 @@ fun ArtistsScreen(
                                 allSongs = allSongs,
                                 currentSongId = currentSongId,
                                 onSongClick = onSongClick,
+                                listState = listState,
                                 dragOffsetX = dragOffset,
                                 onDrag = { nextValue ->
                                     dragOffsets[artist.name] = nextValue
