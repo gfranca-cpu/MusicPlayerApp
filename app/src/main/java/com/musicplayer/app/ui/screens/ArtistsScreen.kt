@@ -146,7 +146,12 @@ fun ArtistsScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentPadding = PaddingValues(bottom = 140.dp),
+                        contentPadding = PaddingValues(
+                            start = 0.dp,
+                            top = 0.dp,
+                            end = 0.dp,
+                            bottom = 140.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(artists, key = { it.name }) { artist ->
