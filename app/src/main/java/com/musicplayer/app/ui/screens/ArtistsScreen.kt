@@ -51,6 +51,15 @@ fun ArtistsScreen(
     val backgroundListState = rememberLazyListState()
     val artistListState = rememberLazyListState()
 
+    LaunchedEffect(artistListState) {
+        snapshotFlow { artistListState.firstVisibleItemIndex to artistListState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                if (backgroundListState.firstVisibleItemIndex != index || backgroundListState.firstVisibleItemScrollOffset != offset) {
+                    backgroundListState.scrollToItem(index, offset)
+                }
+            }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -91,6 +100,7 @@ fun ArtistsScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         state = backgroundListState,
+                        userScrollEnabled = false,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 140.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -143,7 +153,7 @@ fun ArtistsScreen(
 
                     LazyColumn(
                         state = artistListState,
-                        userScrollEnabled = false,
+                        userScrollEnabled = true,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp, vertical = 8.dp),
