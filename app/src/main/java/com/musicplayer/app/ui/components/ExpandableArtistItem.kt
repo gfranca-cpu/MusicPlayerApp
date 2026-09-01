@@ -1,5 +1,7 @@
 package com.musicplayer.app.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -23,6 +25,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +48,7 @@ fun ExpandableArtistItem(
     listState: LazyListState,
     modifier: Modifier = Modifier,
     dragOffsetX: Float = 0f,
+    onDragStart: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
     onDragEnd: (Boolean) -> Unit = {}
 ) {
@@ -52,15 +56,18 @@ fun ExpandableArtistItem(
     val dragThreshold = 120f
 
     var offsetX by remember { mutableStateOf(dragOffsetX) }
+    var isDragging by remember { mutableStateOf(false) }
+    val offsetAnimation = remember { Animatable(dragOffsetX) }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(dragOffsetX) {
-        if (dragOffsetX != offsetX) {
-            offsetX = dragOffsetX
+        if (!isDragging && dragOffsetX != offsetAnimation.value) {
+            offsetAnimation.animateTo(dragOffsetX, animationSpec = tween(180))
         }
     }
 
-    val clampedOffset = offsetX.coerceIn(0f, maxDragOffset)
+    val renderedOffset = if (isDragging) offsetX else offsetAnimation.value
+    val clampedOffset = renderedOffset.coerceIn(0f, maxDragOffset)
 
     Box(
         modifier = modifier
@@ -75,8 +82,19 @@ fun ExpandableArtistItem(
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
+                        onDragStart = {
+                            isDragging = true
+                            onDragStart()
+                        },
                         onDragEnd = {
-                            onDragEnd(offsetX > dragThreshold)
+                            val expanded = offsetX >= dragThreshold
+                            isDragging = false
+                            coroutineScope.launch {
+                                val targetOffset = if (expanded) maxDragOffset else 0f
+                                offsetAnimation.snapTo(offsetX)
+                                offsetAnimation.animateTo(targetOffset, animationSpec = tween(180))
+                                onDragEnd(expanded)
+                            }
                         },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
@@ -131,6 +149,7 @@ fun ExpandableArtistItem(
                     .align(Alignment.TopEnd)
                     .width(clampedOffset.dp)
                     .fillMaxHeight()
+                    .zIndex(1f)
                     .pointerInput(listState) {
                         detectVerticalDragGestures(
                             onVerticalDrag = { change, dragAmount ->

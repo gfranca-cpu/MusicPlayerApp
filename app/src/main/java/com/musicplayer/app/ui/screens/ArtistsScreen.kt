@@ -47,7 +47,7 @@ fun ArtistsScreen(
 ) {
     val allSongs = remember(artists) { buildFlatArtistSongs(artists) }
     val dragOffsets = remember(artists) { mutableStateMapOf<String, Float>() }
-    val activeArtist = dragOffsets.maxByOrNull { it.value }?.key
+    var activeArtist by remember(artists) { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
     Column(
@@ -163,11 +163,26 @@ fun ArtistsScreen(
                                 onSongClick = onSongClick,
                                 listState = listState,
                                 dragOffsetX = dragOffset,
+                                onDragStart = {
+                                    if (activeArtist != artist.name) {
+                                        activeArtist?.let { previousArtist ->
+                                            dragOffsets[previousArtist] = 0f
+                                        }
+                                        activeArtist = artist.name
+                                    }
+                                },
                                 onDrag = { nextValue ->
                                     dragOffsets[artist.name] = nextValue
                                 },
                                 onDragEnd = { expanded ->
-                                    dragOffsets[artist.name] = if (expanded) 260f else 0f
+                                    if (expanded) {
+                                        dragOffsets[artist.name] = 260f
+                                    } else {
+                                        dragOffsets[artist.name] = 0f
+                                        if (activeArtist == artist.name) {
+                                            activeArtist = null
+                                        }
+                                    }
                                 }
                             )
                         }
