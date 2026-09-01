@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.musicplayer.app.data.Artist
+import com.musicplayer.app.data.Song
 import com.musicplayer.app.ui.theme.ArtistCard
 import com.musicplayer.app.ui.theme.TextWhite
 import kotlin.math.roundToInt
@@ -57,8 +59,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun ExpandableArtistItem(
     artist: Artist,
+    allSongs: List<Song>,
+    currentSongId: Long?,
+    onSongClick: (Song, List<Song>) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
+    activeArtist: String? = null,
+    onRevealSongClick: (Song) -> Unit = {},
     dragOffsetX: Float = 0f,
     onDragStart: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
@@ -68,12 +75,11 @@ fun ExpandableArtistItem(
     val offsetAnimation = remember { Animatable(dragOffsetX) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Mantém as callbacks atualizadas
     val currentOnDragStart by rememberUpdatedState(onDragStart)
     val currentOnDrag by rememberUpdatedState(onDrag)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+    val currentOnRevealSongClick by rememberUpdatedState(onRevealSongClick)
 
-    // Offset local usado apenas durante o arrasto
     var offsetX by remember { mutableFloatStateOf(dragOffsetX) }
 
     BoxWithConstraints(
@@ -85,13 +91,9 @@ fun ExpandableArtistItem(
         val maxDragOffset = with(density) { (maxWidth * 0.8f).toPx() }
         val dragThreshold = maxDragOffset * 0.5f
 
-        // Sincroniza com o valor externo quando não está arrastando
         LaunchedEffect(dragOffsetX) {
             if (!isDragging && dragOffsetX != offsetAnimation.value) {
-                offsetAnimation.animateTo(
-                    targetValue = dragOffsetX,
-                    animationSpec = tween(180)
-                )
+                offsetAnimation.animateTo(dragOffsetX, animationSpec = tween(180))
                 offsetX = dragOffsetX
             }
         }
@@ -99,7 +101,7 @@ fun ExpandableArtistItem(
         val renderedOffset = if (isDragging) offsetX else offsetAnimation.value
         val clampedOffset = renderedOffset.coerceIn(0f, maxDragOffset)
 
-        // Card principal (artista)
+        // Card do artista
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,7 +141,6 @@ fun ExpandableArtistItem(
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar com iniciais
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -177,7 +178,7 @@ fun ExpandableArtistItem(
             }
         }
 
-        // Área revelada (permite scroll da lista)
+        // Área revelada
         if (clampedOffset > 0f) {
             Box(
                 modifier = Modifier
@@ -185,29 +186,29 @@ fun ExpandableArtistItem(
                     .width(with(density) { clampedOffset.toDp() })
                     .fillMaxHeight()
                     .zIndex(1f)
-                    .pointerInput(listState) {
-                        val touchSlop = with(density) { 8.dp.toPx() }
+                    .pointerInput(listState, activeArtist, currentOnRevealSongClick) {
+                        val touchSlopPx = with(density) { 8.dp.toPx() }
 
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             var totalDragY = 0f
-                            var isVerticalDrag = false
+                            var dragging = false
 
                             while (true) {
                                 val event = awaitPointerEvent()
-                                val changes = event.changes.filter { it.id == down.id }
+                                val matchingChanges = event.changes.filter { it.id == down.id }
 
-                                changes.forEach { change ->
+                                matchingChanges.forEach { change ->
                                     val deltaY = change.positionChange().y
 
-                                    if (!isVerticalDrag) {
+                                    if (!dragging) {
                                         totalDragY += deltaY
-                                        if (kotlin.math.abs(totalDragY) >= touchSlop) {
-                                            isVerticalDrag = true
+                                        if (kotlin.math.abs(totalDragY) >= touchSlopPx) {
+                                            dragging = true
                                         }
                                     }
 
-                                    if (isVerticalDrag) {
+                                    if (dragging) {
                                         change.consume()
                                         coroutineScope.launch {
                                             listState.scrollBy(-deltaY)
@@ -215,7 +216,24 @@ fun ExpandableArtistItem(
                                     }
                                 }
 
-                                if (changes.none { it.pressed }) break
+                                if (!event.changes.any { it.pressed }) {
+                                    if (!dragging) {
+                                        // Mantive a lógica original de detecção de toque
+                                        val tappedY = down.position.y + listState.layoutInfo.viewportStartOffset
+                                        val tappedSong = listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull { info ->
+                                                tappedY >= info.offset.toFloat() &&
+                                                    tappedY <= (info.offset + info.size).toFloat()
+                                            }
+                                            ?.index
+                                            ?.let { index -> allSongs.getOrNull(index) }
+
+                                        if (tappedSong != null && activeArtist != null && tappedSong.artist == activeArtist) {
+                                            currentOnRevealSongClick(tappedSong)
+                                        }
+                                    }
+                                    break
+                                }
                             }
                         }
                     }
