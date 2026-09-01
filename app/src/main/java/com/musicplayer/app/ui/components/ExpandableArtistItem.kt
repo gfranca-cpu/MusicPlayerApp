@@ -25,10 +25,11 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.zIndex
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -152,7 +153,7 @@ fun ExpandableArtistItem(
                     .zIndex(1f)
                     .pointerInput(listState) {
                         detectVerticalDragGestures(
-                            onVerticalDrag = { change, dragAmount ->
+                            onVerticalDrag = { change: PointerInputChange, dragAmount: Float ->
                                 change.consume()
                                 coroutineScope.launch {
                                     listState.scrollBy(-dragAmount)
