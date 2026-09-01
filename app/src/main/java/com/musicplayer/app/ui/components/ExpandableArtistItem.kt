@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
@@ -53,28 +54,29 @@ fun ExpandableArtistItem(
     onDrag: (Float) -> Unit = {},
     onDragEnd: (Boolean) -> Unit = {}
 ) {
-    val maxDragOffset = 260f
-    val dragThreshold = 120f
-
     var offsetX by remember { mutableStateOf(dragOffsetX) }
     var isDragging by remember { mutableStateOf(false) }
     val offsetAnimation = remember { Animatable(dragOffsetX) }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(dragOffsetX) {
-        if (!isDragging && dragOffsetX != offsetAnimation.value) {
-            offsetAnimation.animateTo(dragOffsetX, animationSpec = tween(180))
-        }
-    }
-
-    val renderedOffset = if (isDragging) offsetX else offsetAnimation.value
-    val clampedOffset = renderedOffset.coerceIn(0f, maxDragOffset)
-
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
     ) {
+        val density = LocalDensity.current
+        val maxDragOffset = with(density) { (maxWidth * 0.8f).toPx() }
+        val dragThreshold = maxDragOffset * 0.5f
+
+        LaunchedEffect(dragOffsetX) {
+            if (!isDragging && dragOffsetX != offsetAnimation.value) {
+                offsetAnimation.animateTo(dragOffsetX, animationSpec = tween(180))
+            }
+        }
+
+        val renderedOffset = if (isDragging) offsetX else offsetAnimation.value
+        val clampedOffset = renderedOffset.coerceIn(0f, maxDragOffset)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -153,7 +155,7 @@ fun ExpandableArtistItem(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .width(clampedOffset.dp)
+                    .width(with(density) { clampedOffset.toDp() })
                     .fillMaxHeight()
                     .zIndex(1f)
                     .pointerInput(listState) {
