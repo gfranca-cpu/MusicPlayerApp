@@ -11,6 +11,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +44,16 @@ fun ExpandableArtistItem(
 ) {
     val maxDragOffset = 260f
     val dragThreshold = 120f
-    val clampedOffset = dragOffsetX.coerceIn(0f, maxDragOffset)
+
+    var offsetX by remember { mutableStateOf(dragOffsetX) }
+
+    LaunchedEffect(dragOffsetX) {
+        if (dragOffsetX != offsetX) {
+            offsetX = dragOffsetX
+        }
+    }
+
+    val clampedOffset = offsetX.coerceIn(0f, maxDragOffset)
 
     Row(
         modifier = modifier
@@ -48,13 +62,15 @@ fun ExpandableArtistItem(
             .offset { IntOffset(x = (-clampedOffset).roundToInt(), y = 0) }
             .clip(RoundedCornerShape(14.dp))
             .background(ArtistCard)
-            .pointerInput(artist.name) {
+            .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        onDragEnd(clampedOffset > dragThreshold)
+                        onDragEnd(offsetX > dragThreshold)
                     },
-                    onHorizontalDrag = { _, dragAmount ->
-                        val nextOffset = (clampedOffset + dragAmount).coerceIn(0f, maxDragOffset)
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        val nextOffset = (offsetX + dragAmount).coerceIn(0f, maxDragOffset)
+                        offsetX = nextOffset
                         onDrag(nextOffset)
                     }
                 )
