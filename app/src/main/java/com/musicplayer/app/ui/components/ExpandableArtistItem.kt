@@ -76,7 +76,7 @@ fun ExpandableArtistItem(
                         },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            val nextOffset = (offsetX + dragAmount).coerceIn(0f, maxDragOffset)
+                            val nextOffset = (offsetX - dragAmount).coerceIn(0f, maxDragOffset)
                             offsetX = nextOffset
                             onDrag(nextOffset)
                         }
