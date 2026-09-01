@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
@@ -38,8 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.awaitFirstDown
-import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
@@ -178,7 +177,7 @@ fun ExpandableArtistItem(
             }
         }
 
-        // Área revelada
+        // Área revelada (gesto de scroll + toque)
         if (clampedOffset > 0f) {
             Box(
                 modifier = Modifier
@@ -218,7 +217,6 @@ fun ExpandableArtistItem(
 
                                 if (!event.changes.any { it.pressed }) {
                                     if (!dragging) {
-                                        // Mantive a lógica original de detecção de toque
                                         val tappedY = down.position.y + listState.layoutInfo.viewportStartOffset
                                         val tappedSong = listState.layoutInfo.visibleItemsInfo
                                             .firstOrNull { info ->
