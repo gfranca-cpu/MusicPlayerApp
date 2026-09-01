@@ -74,74 +74,79 @@ fun ExpandableArtistItem(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .offset { IntOffset(x = (-clampedOffset).roundToInt(), y = 0) }
-            .clip(RoundedCornerShape(14.dp))
-            .background(ArtistCard)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragStart = {
-                            isDragging = true
-                            onDragStart()
-                        },
-                        onDragEnd = {
-                            val expanded = offsetX >= dragThreshold
-                            isDragging = false
-                            coroutineScope.launch {
-                                val targetOffset = if (expanded) maxDragOffset else 0f
-                                offsetAnimation.snapTo(offsetX)
-                                offsetAnimation.animateTo(targetOffset, animationSpec = tween(180))
-                                onDragEnd(expanded)
+                .offset { IntOffset(x = (-clampedOffset).roundToInt(), y = 0) }
+                .clip(RoundedCornerShape(14.dp))
+                .background(ArtistCard)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragStart = {
+                                isDragging = true
+                                onDragStart()
+                            },
+                            onDragEnd = {
+                                val expanded = offsetX >= dragThreshold
+                                isDragging = false
+                                coroutineScope.launch {
+                                    val targetOffset = if (expanded) maxDragOffset else 0f
+                                    offsetAnimation.snapTo(offsetX)
+                                    offsetAnimation.animateTo(targetOffset, animationSpec = tween(180))
+                                    onDragEnd(expanded)
+                                }
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                val nextOffset = (offsetX - dragAmount).coerceIn(0f, maxDragOffset)
+                                offsetX = nextOffset
+                                onDrag(nextOffset)
                             }
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            val nextOffset = (offsetX - dragAmount).coerceIn(0f, maxDragOffset)
-                            offsetX = nextOffset
-                            onDrag(nextOffset)
-                        }
+                        )
+                    }
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(ArtistCard.copy(alpha = 0.75f))
+                        .border(1.dp, TextWhite.copy(alpha = 0.35f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = artist.name.take(2).uppercase(),
+                        color = TextWhite,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(ArtistCard.copy(alpha = 0.75f))
-                    .border(1.dp, TextWhite.copy(alpha = 0.35f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
+
+                Spacer(modifier = Modifier.width(10.dp))
+
                 Text(
-                    text = artist.name.take(2).uppercase(),
+                    text = artist.name,
                     color = TextWhite,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = TextWhite,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Text(
-                text = artist.name,
-                color = TextWhite,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = TextWhite,
-                modifier = Modifier.size(20.dp)
-            )
         }
 
         if (clampedOffset > 0f) {
