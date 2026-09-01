@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
@@ -27,7 +26,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.awaitEachGesture
+import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.zIndex
@@ -49,6 +50,8 @@ fun ExpandableArtistItem(
     onSongClick: (Song, List<Song>) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
+    activeArtist: String? = null,
+    onRevealSongClick: (Song) -> Unit = {},
     dragOffsetX: Float = 0f,
     onDragStart: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
@@ -158,15 +161,55 @@ fun ExpandableArtistItem(
                     .width(with(density) { clampedOffset.toDp() })
                     .fillMaxHeight()
                     .zIndex(1f)
-                    .pointerInput(listState) {
-                        detectVerticalDragGestures(
-                            onVerticalDrag = { change: PointerInputChange, dragAmount: Float ->
-                                change.consume()
-                                coroutineScope.launch {
-                                    listState.scrollBy(-dragAmount)
+                    .pointerInput(listState, activeArtist, onRevealSongClick) {
+                        val touchSlopPx = with(density) { 8.dp.toPx() }
+
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            var totalDragY = 0f
+                            var dragging = false
+
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val matchingChanges = event.changes.filter { it.id == down.id }
+
+                                matchingChanges.forEach { change ->
+                                    val deltaY = change.positionChange().y
+
+                                    if (!dragging) {
+                                        totalDragY += deltaY
+                                        if (kotlin.math.abs(totalDragY) >= touchSlopPx) {
+                                            dragging = true
+                                        }
+                                    }
+
+                                    if (dragging) {
+                                        change.consume()
+                                        coroutineScope.launch {
+                                            listState.scrollBy(-deltaY)
+                                        }
+                                    }
+                                }
+
+                                if (!event.changes.any { it.pressed }) {
+                                    if (!dragging) {
+                                        val tappedY = down.position.y + listState.layoutInfo.viewportStartOffset
+                                        val tappedSong = listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull { info ->
+                                                tappedY >= info.offset.toFloat() &&
+                                                    tappedY <= (info.offset + info.size).toFloat()
+                                            }
+                                            ?.index
+                                            ?.let { index -> allSongs.getOrNull(index) }
+
+                                        if (tappedSong != null && activeArtist != null && tappedSong.artist == activeArtist) {
+                                            onRevealSongClick(tappedSong)
+                                        }
+                                    }
+                                    break
                                 }
                             }
-                        )
+                        }
                     }
             )
         }

@@ -173,6 +173,13 @@ fun ArtistsScreen(
                                 currentSongId = currentSongId,
                                 onSongClick = onSongClick,
                                 listState = backgroundListState,
+                                activeArtist = activeArtist,
+                                onRevealSongClick = { song ->
+                                    if (activeArtist == artist.name) {
+                                        val artistSongs = artistSongList(artist)
+                                        onSongClick(song, artistSongs)
+                                    }
+                                },
                                 dragOffsetX = dragOffset,
                                 onDragStart = {
                                     if (activeArtist != artist.name) {
