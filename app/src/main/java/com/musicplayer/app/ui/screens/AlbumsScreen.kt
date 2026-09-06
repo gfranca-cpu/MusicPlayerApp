@@ -237,12 +237,16 @@ fun ArtistsScreen(
 
                                         activeSongId = firstSong.id
                                         dragOffsets[firstSong.id] = maxDragOffsetPx
-
-                                        val targetIndex = allSongs.indexOfFirst { it.id == firstSong.id }
-                                        if (targetIndex >= 0) {
-                                            scope.launch {
-                                                songListState.animateScrollToItem(targetIndex)
-                                            }
+                                        val targetArtistIndex = nearestVirtualIndexFor(
+                                         newSong.artist,
+                                         artistNames,
+                                        namesListState.firstVisibleItemIndex            
+)
+                                  val songOffsetInViewport = songListState.layoutInfo.visibleItemsInfo
+    .firstOrNull { it.key == currentSongId }
+    ?.offset ?: 0
+namesListState.animateScrollToItem(targetArtistIndex, songOffsetInViewport)
+                               
                                         }
                                     }
                                 },
