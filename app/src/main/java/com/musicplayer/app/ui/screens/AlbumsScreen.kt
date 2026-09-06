@@ -264,24 +264,29 @@ fun ArtistsScreen(
                                         }
                                     }
                                 },
-                                onDrag = { nextValue ->
-                                    dragOffsets[song.id] = nextValue
-                                },
-                                onDragEnd = { expanded, targetOffsetPx ->
-                                    if (expanded) {
-                                        dragOffsets[song.id] = targetOffsetPx
-                                    } else {
-                                        dragOffsets[song.id] = 0f
-                                        if (activeSongId == song.id) {
-                                            activeSongId = null
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+                                onDragStart = {
+    if (activeSongId != song.id) {
+        activeSongId?.let { previousId ->
+            dragOffsets[previousId] = 0f
+        }
+        activeSongId = song.id
+
+        val targetArtistIndex = nearestVirtualIndexFor(
+            song.artist,
+            artistNames,
+            namesListState.firstVisibleItemIndex
+        )
+        val songOffsetInViewport = songListState.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.key == song.id }
+            ?.offset ?: 0
+        scope.launch {
+            namesListState.animateScrollToItem(targetArtistIndex, songOffsetInViewport)
         }
     }
-}
+},
+                                    
+                               
+                               
+                        
+                                      
+                
