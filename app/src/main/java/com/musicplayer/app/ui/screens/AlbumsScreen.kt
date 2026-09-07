@@ -1,5 +1,5 @@
 package com.musicplayer.app.ui.screens
-
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
