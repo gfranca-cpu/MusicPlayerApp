@@ -1,3 +1,4 @@
+
 package com.musicplayer.app.ui.screens
 
 import androidx.compose.foundation.background
@@ -61,37 +62,40 @@ fun ArtistsScreen(
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        // ========== CABEÇALHO DINÂMICO ==========
+        // ========== CABEÇALHO DINÂMICO (fonte ajustada) ==========
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Músicas($songCount)",
                 color = if (!isAnyTarjaOpen) TextWhite else TextWhite.copy(alpha = 0.45f),
-                fontSize = if (!isAnyTarjaOpen) 20.sp else 16.sp,
+                fontSize = if (!isAnyTarjaOpen) 16.sp else 14.sp,
                 fontWeight = if (!isAnyTarjaOpen) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
 
             Text(
                 text = "Artistas($artistCount)",
                 color = if (isAnyTarjaOpen) TextWhite else TextWhite.copy(alpha = 0.45f),
-                fontSize = if (isAnyTarjaOpen) 20.sp else 16.sp,
+                fontSize = if (isAnyTarjaOpen) 16.sp else 14.sp,
                 fontWeight = if (isAnyTarjaOpen) FontWeight.Bold else FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
             )
 
             Text(
                 text = "Álbuns($albumCount)",
                 color = TextWhite.copy(alpha = 0.45f),
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.End
+                maxLines = 1,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -200,7 +204,7 @@ fun ArtistsScreen(
                         }
                     }
 
-                    // ========== ESCOTILHA LATERAL (scrollbar) ==========
+                    // ========== ESCOTILHA LATERAL ==========
                     val layoutInfo = songListState.layoutInfo
                     val totalItems = allSongs.size
                     if (totalItems > 3) {
